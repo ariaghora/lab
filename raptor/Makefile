@@ -1,2 +1,3 @@
 all:
-	gcc -o raptor main.c -Wall -Wextra -Werror -pedantic -std=c99
+	CGO_ENABLED=1 CC=gcc go build -tags static -ldflags "-s -w"
+
