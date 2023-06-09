@@ -46,16 +46,25 @@ func (r *RaptorCfg) HandleBufferWriteToFile(ev *sdl.KeyboardEvent) {
 func (r *RaptorCfg) HandleEnteringInsertMode(ev *sdl.KeyboardEvent) {
 	if ev.Keysym.Scancode == sdl.SCANCODE_A {
 		r.LastInsertMethod = InsertMethodAppend
-		if len(r.Rows[r.RowOffset+r.CY].Chars) > 1 {
+		if len(r.Rows[r.RowOffset+r.CY].Chars) > 0 {
 			r.CX += 1
 		}
 	} else if ev.Keysym.Scancode == sdl.SCANCODE_O {
+		shifted := false
+		if ev.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
+			shifted = true
+		}
+
+		if shifted {
+			r.Rows = insertAtIndex(r.Rows, r.CY+r.RowOffset, Row{""})
+		} else {
+			r.Rows = insertAtIndex(r.Rows, r.CY+r.RowOffset+1, Row{""})
+			r.CX = 0
+			r.CY += 1
+		}
+
 		r.LastInsertMethod = InsertMethodBreakLine
-		r.Rows = insertAtIndex(r.Rows, r.CY+r.RowOffset+1, Row{""})
-		r.CX = 0
-		r.CY += 1
 		r.NumRows += 1
-		// r.IMLineBreak()
 	}
 	r.EditorMode = EditorModeInsert
 }

@@ -3,13 +3,19 @@ package main
 import (
 	"bufio"
 	"container/list"
+	"fmt"
 	"os"
 	"strconv"
+
+	_ "embed"
 
 	"github.com/rivo/uniseg"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/ttf"
 )
+
+//go:embed IosevkaNerdFontMono-Medium.ttf
+var FontBytes []byte
 
 const EditorWidth = 1000
 const EditorHeight = 600
@@ -84,16 +90,22 @@ func NewEditor() *RaptorCfg {
 	if err != nil {
 		panic(err)
 	}
-	// defer rendererRef.Destroy()
+
 	renderer.SetViewport(&sdl.Rect{X: 0, Y: 0, W: EditorWidth, H: EditorHeight})
 
 	fontSize := 14
 	lineHeight := 22
 	sbarHeight := 24
-	font, err := ttf.OpenFont("IosevkaNerdFontMono-Medium.ttf", fontSize)
+
+	rawFont, err := sdl.RWFromMem(FontBytes)
 	if err != nil {
 		panic(err)
 	}
+	font, err := ttf.OpenFontRW(rawFont, 1, fontSize)
+	if err != nil {
+		panic(err)
+	}
+
 	w, h := window.GetSize()
 
 	cfg := &RaptorCfg{
@@ -240,7 +252,7 @@ func (r *RaptorCfg) DrawScreen() {
 	r.renderer.SetDrawColor(40, 40, 40, 255)
 	r.renderer.FillRect(&sdl.Rect{X: 0, Y: 0, W: int32(r.EditorWidth), H: int32(r.EditorHeight)})
 
-	// Line number area
+	//=== Line number area
 	screenMaxLineNo := strconv.Itoa(r.RowOffset + r.ScreenRows)
 	surf, _ := r.sdlFont.RenderUTF8Blended(screenMaxLineNo, sdl.Color{})
 	lineNoColWidth := surf.W + 20 + 20
@@ -260,7 +272,7 @@ func (r *RaptorCfg) DrawScreen() {
 		}
 	}
 
-	// Texts
+	//=== Render the actual texts
 	for y := r.RowOffset; y < r.RowOffset+r.ScreenRows; y += 1 {
 		if y < r.NumRows {
 			r.renderBufferText(
@@ -272,10 +284,10 @@ func (r *RaptorCfg) DrawScreen() {
 		}
 	}
 
-	// Statusbar
+	//=== Statusbar
 	r.DrawSBar()
 
-	// Toast
+	//=== Update and draw toast list
 	for e := r.Toasts.Front(); e != nil; e = e.Next() {
 		if e.Value == nil {
 			continue
@@ -351,9 +363,18 @@ func main() {
 	cfg := NewEditor()
 	defer cfg.Destroy()
 
-	cfg.Toasts.PushFront(NewToast("Editing "+"README.md", 2, cfg.renderer, cfg.sdlFont))
+	if len(os.Args) != 2 {
+		fmt.Println("Specify filename")
+		os.Exit(1)
+	}
 
-	cfg.OpenFile("README.md")
+	fileName := os.Args[1]
+	if err := cfg.OpenFile(fileName); err != nil {
+		fmt.Println("Error opening", fileName)
+		os.Exit(1)
+	}
+
+	cfg.Toasts.PushFront(NewToast("Editing "+fileName, 2, cfg.renderer, cfg.sdlFont))
 	cfg.Run()
 
 }
