@@ -7,7 +7,7 @@ func (r *RaptorCfg) DrawSBarInsert() {
 
 	r.renderer.SetDrawColor(145, 36, 80, 255)
 	r.renderer.FillRect(&sdl.Rect{X: origX, Y: origY, W: EditorWidth, H: int32(r.SbarHeight)})
-	s, _ := r.sdlFont.RenderUTF8Blended("INSERT", sdl.Color{R: 255, G: 255, B: 255, A: 255})
+	s, _ := r.sdlFont.RenderUTF8Blended("Insert", sdl.Color{R: 255, G: 255, B: 255, A: 255})
 	defer s.Free()
 
 	t, _ := r.renderer.CreateTextureFromSurface(s)

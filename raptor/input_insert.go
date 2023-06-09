@@ -11,9 +11,7 @@ func removeAtIndex(s []Row, index int) []Row {
 }
 
 func insertAtIndex(s []Row, index int, value Row) []Row {
-	s = append(s[:index+1], s[index:]...)
-	copy(s[index+1:], s[index:])
-	s[index] = value
+	s = append(s[:index], append([]Row{value}, s[index:]...)...)
 	return s
 }
 
@@ -22,7 +20,6 @@ func (r *RaptorCfg) IMInsertChar(c rune) {
 	new := string(old[:r.CX+r.ColOffset]) + string(c) + string(old[r.CX+r.ColOffset:])
 	r.Rows[r.RowOffset+r.CY].Chars = new
 	r.CX += 1
-	r.DrawScreen()
 }
 
 func (r *RaptorCfg) IMBackspace() {
@@ -50,7 +47,6 @@ func (r *RaptorCfg) IMBackspace() {
 		r.Rows[y].Chars = new
 	}
 
-	r.DrawScreen()
 }
 
 func (r *RaptorCfg) IMLineBreak() {
@@ -64,7 +60,6 @@ func (r *RaptorCfg) IMLineBreak() {
 	r.CY += 1
 	r.CX = 0
 	r.NumRows += 1
-	r.DrawScreen()
 }
 
 func (r *RaptorCfg) HandleKeyPressInsertMode(ev *sdl.KeyboardEvent) {

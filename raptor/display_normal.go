@@ -7,7 +7,7 @@ func (r *RaptorCfg) DrawSBarVisual() {
 
 	r.renderer.SetDrawColor(40, 80, 145, 255)
 	r.renderer.FillRect(&sdl.Rect{X: origX, Y: origY, W: EditorWidth, H: int32(r.SbarHeight)})
-	s, _ := r.sdlFont.RenderUTF8Blended("VISUAL", sdl.Color{R: 255, G: 255, B: 255, A: 255})
+	s, _ := r.sdlFont.RenderUTF8Blended("Normal", sdl.Color{R: 255, G: 255, B: 255, A: 255})
 	defer s.Free()
 
 	t, _ := r.renderer.CreateTextureFromSurface(s)

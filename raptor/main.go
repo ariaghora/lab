@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"container/list"
 	"os"
 	"strconv"
 
@@ -20,7 +21,7 @@ type Row struct {
 type EditorMode int64
 
 const (
-	EditorModeVisual EditorMode = iota
+	EditorModeNormal EditorMode = iota
 	EditorModeInsert
 	EditorModeSelect
 )
@@ -32,6 +33,11 @@ const (
 	InsertMethodAppend
 	InsertMethodBreakLine
 )
+
+type Renderer interface {
+	Draw()
+	Update()
+}
 
 type RaptorCfg struct {
 	CX               int
@@ -51,6 +57,8 @@ type RaptorCfg struct {
 	Rows             []Row
 	SbarHeight       int
 	ShiftMapper      map[string]string
+
+	Toasts list.List
 
 	sdlFont   *ttf.Font
 	sdlWindow *sdl.Window
@@ -86,7 +94,6 @@ func NewEditor() *RaptorCfg {
 	if err != nil {
 		panic(err)
 	}
-
 	w, h := window.GetSize()
 
 	cfg := &RaptorCfg{
@@ -117,6 +124,7 @@ func NewEditor() *RaptorCfg {
 			".":  ">",
 			"/":  "?",
 		},
+		Toasts:    *list.New(),
 		sdlFont:   font,
 		sdlWindow: window,
 		renderer:  renderer,
@@ -151,7 +159,7 @@ func (r *RaptorCfg) OpenFile(fileName string) error {
 }
 
 func (r *RaptorCfg) HandleKeyPress(ev *sdl.KeyboardEvent) {
-	if r.EditorMode == EditorModeVisual {
+	if r.EditorMode == EditorModeNormal {
 		switch ev.Keysym.Scancode {
 		// entering insert mode
 		case sdl.SCANCODE_I, sdl.SCANCODE_A, sdl.SCANCODE_O:
@@ -170,15 +178,23 @@ func (r *RaptorCfg) HandleKeyPress(ev *sdl.KeyboardEvent) {
 			r.HandleKeyPressK()
 		case sdl.SCANCODE_L:
 			r.HandleKeyPressL()
+		case sdl.SCANCODE_W:
+			r.JumpToNextWordBeginning()
+		case sdl.SCANCODE_B:
+			r.JumpToPrevWordBeginning()
 		}
 	} else if r.EditorMode == EditorModeInsert {
 		r.HandleKeyPressInsertMode(ev)
 	}
 }
 
+func (r *RaptorCfg) SwitchToNormalMode() {
+}
+
 func (r *RaptorCfg) Run() {
 	running := true
 	for running {
+		// events
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch t := event.(type) {
 			case *sdl.QuitEvent:
@@ -186,19 +202,21 @@ func (r *RaptorCfg) Run() {
 			case *sdl.KeyboardEvent:
 				if t.State == sdl.PRESSED {
 					if t.Keysym.Scancode == sdl.SCANCODE_ESCAPE {
-						r.EditorMode = EditorModeVisual
-						if r.LastInsertMethod == InsertMethodAppend {
+						if r.CX > 0 && r.EditorMode == EditorModeInsert {
 							r.CX -= 1
 						}
+						r.EditorMode = EditorModeNormal
 						r.LastInsertMethod = InsertMethodInsert
-						r.DrawScreen()
 					}
 
 					r.HandleKeyPress(t)
 				}
 			}
 		}
-		sdl.Delay(16)
+
+		// draw
+		r.DrawScreen()
+		sdl.Delay(33)
 	}
 }
 
@@ -208,7 +226,7 @@ func (r *RaptorCfg) Destroy() {
 }
 
 func (r *RaptorCfg) DrawSBar() {
-	if r.EditorMode == EditorModeVisual {
+	if r.EditorMode == EditorModeNormal {
 		r.DrawSBarVisual()
 	} else if r.EditorMode == EditorModeInsert {
 		r.DrawSBarInsert()
@@ -245,14 +263,37 @@ func (r *RaptorCfg) DrawScreen() {
 	// Texts
 	for y := r.RowOffset; y < r.RowOffset+r.ScreenRows; y += 1 {
 		if y < r.NumRows {
-			r.renderBufferText(int(lineNoColWidth+8), (y-r.RowOffset)*r.LineHeight, r.Rows[y].Chars, r.LineHeight, r.renderer)
+			r.renderBufferText(
+				int(lineNoColWidth+8),
+				(y-r.RowOffset)*r.LineHeight,
+				r.Rows[y].Chars,
+				r.LineHeight,
+				r.renderer)
 		}
 	}
 
 	// Statusbar
 	r.DrawSBar()
 
+	// Toast
+	for e := r.Toasts.Front(); e != nil; e = e.Next() {
+		if e.Value == nil {
+			continue
+		}
+		next := e.Next()
+		t := e.Value.(*Toast)
+		t.Update()
+		t.Draw()
+
+		if t.shouldDestroy {
+			t.Destroy()
+			r.Toasts.Remove(e)
+		}
+		e = next
+	}
+
 	r.renderer.Present()
+
 }
 
 func (r *RaptorCfg) renderBufferText(x int, y int, text string, lineHeight int, renderer *sdl.Renderer) {
@@ -310,8 +351,9 @@ func main() {
 	cfg := NewEditor()
 	defer cfg.Destroy()
 
+	cfg.Toasts.PushFront(NewToast("Editing "+"README.md", 2, cfg.renderer, cfg.sdlFont))
+
 	cfg.OpenFile("README.md")
-	cfg.DrawScreen()
 	cfg.Run()
 
 }

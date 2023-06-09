@@ -15,36 +15,49 @@ func (r *RaptorCfg) HandleBufferWriteToFile(ev *sdl.KeyboardEvent) {
 	}
 
 	if ctrl {
-		file, err := os.OpenFile(r.FileName, os.O_WRONLY|os.O_CREATE, 0755)
+		file, err := os.OpenFile(r.FileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			panic(err)
 		}
 		defer file.Close()
 
 		writer := bufio.NewWriter(file)
-		for _, row := range r.Rows {
-			fmt.Fprintln(writer, row.Chars)
+		for i, row := range r.Rows {
+			line := row.Chars
+			if len(line) == 0 {
+				line = "\n"
+			}
+
+			if i > 0 {
+				fmt.Fprint(writer, "\n")
+			}
+			fmt.Fprint(writer, line)
 		}
 
 		// Use the Flush method to make sure all buffered operations have been applied to the underlying writer.
 		if err = writer.Flush(); err != nil {
 			fmt.Println("Error flushing the buffer:", err)
 		}
-		fmt.Println("Saved")
 
+		r.Toasts.PushFront(NewToast("Saved "+r.FileName, 2, r.renderer, r.sdlFont))
 	}
 }
 
 func (r *RaptorCfg) HandleEnteringInsertMode(ev *sdl.KeyboardEvent) {
 	if ev.Keysym.Scancode == sdl.SCANCODE_A {
 		r.LastInsertMethod = InsertMethodAppend
-		r.CX += 1
+		if len(r.Rows[r.RowOffset+r.CY].Chars) > 1 {
+			r.CX += 1
+		}
 	} else if ev.Keysym.Scancode == sdl.SCANCODE_O {
 		r.LastInsertMethod = InsertMethodBreakLine
-		r.IMLineBreak()
+		r.Rows = insertAtIndex(r.Rows, r.CY+r.RowOffset+1, Row{""})
+		r.CX = 0
+		r.CY += 1
+		r.NumRows += 1
+		// r.IMLineBreak()
 	}
 	r.EditorMode = EditorModeInsert
-	r.DrawScreen()
 }
 
 func (r *RaptorCfg) HandleKeyPressL() {
@@ -57,7 +70,6 @@ func (r *RaptorCfg) HandleKeyPressL() {
 	if r.CX > len(r.Rows[r.RowOffset+r.CY].Chars)-1 {
 		r.CX = len(r.Rows[r.RowOffset+r.CY].Chars) - 1
 	}
-	r.DrawScreen()
 }
 
 func (r *RaptorCfg) HandleKeyPressH() {
@@ -65,7 +77,6 @@ func (r *RaptorCfg) HandleKeyPressH() {
 	if r.CX < 0 {
 		r.CX += 1
 	}
-	r.DrawScreen()
 }
 
 func (r *RaptorCfg) HandleKeyPressJ() {
@@ -92,7 +103,6 @@ func (r *RaptorCfg) HandleKeyPressJ() {
 			r.CX = 0
 		}
 	}
-	r.DrawScreen()
 }
 
 func (r *RaptorCfg) HandleKeyPressK() {
@@ -111,5 +121,4 @@ func (r *RaptorCfg) HandleKeyPressK() {
 			r.CX = 0
 		}
 	}
-	r.DrawScreen()
 }
