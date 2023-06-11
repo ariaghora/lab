@@ -69,6 +69,7 @@ type RaptorCfg struct {
 	CurrentLineNoColWidth int
 	CurrentScreenCols     int
 	CurrentScreenRows     int
+	ConvertTabToSpace     bool
 
 	Toasts list.List
 
@@ -153,6 +154,7 @@ func NewEditor() *RaptorCfg {
 		CurrentScreenCols:  80,
 		CurrentScreenRows:  (EditorHeight - sbarHeight) / lineHeight,
 		CurrentFuleNumRows: 0,
+		ConvertTabToSpace:  false,
 
 		sdlFont:   font,
 		sdlWindow: window,

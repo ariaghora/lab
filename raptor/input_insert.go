@@ -2,6 +2,7 @@ package main
 
 import (
 	"strings"
+	"unicode"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -49,16 +50,47 @@ func (r *RaptorCfg) IMBackspace() {
 
 }
 
+func (r *RaptorCfg) GetCurrentLeadingIndent() string {
+	line := r.Rows[r.CY+r.CurrentRowOffset].Chars
+	if len(strings.TrimSpace(line)) == 0 {
+		return ""
+	}
+
+	leadingIndent := ""
+
+	i := 0
+	c := rune(line[i])
+	for unicode.IsSpace(c) && i < len(line) {
+		if r.ConvertTabToSpace && c == '\t' {
+			leadingIndent += strings.Repeat(" ", r.TabWidth)
+		} else {
+			leadingIndent += string(c)
+		}
+
+		i += 1
+		c = rune(line[i])
+	}
+
+	if unicode.IsSpace(c) {
+		return ""
+	}
+
+	return leadingIndent
+}
+
 func (r *RaptorCfg) IMLineBreak() {
 	x := r.CX + r.CurrentColOffset
 	y := r.CurrentRowOffset + r.CY
 	newCurrent := r.Rows[y].Chars[:x]
 	newLineContent := r.Rows[y].Chars[x:]
 
+	leadingIdent := r.GetCurrentLeadingIndent()
+	newLineContent = leadingIdent + newLineContent
+
 	r.Rows[y].Chars = newCurrent
 	r.Rows = insertAtIndex(r.Rows, y+1, Row{newLineContent, []int{}})
 	r.CY += 1
-	r.CX = 0
+	r.CX = len(leadingIdent)
 	r.CurrentFuleNumRows += 1
 }
 

@@ -59,12 +59,13 @@ func (r *RaptorCfg) HandleEnteringInsertMode(ev *sdl.KeyboardEvent) {
 			shifted = true
 		}
 
+		leadingIndent := r.GetCurrentLeadingIndent()
 		if shifted {
-			r.Rows = insertAtIndex(r.Rows, r.CY+r.CurrentRowOffset, Row{"", []int{}})
-			r.CX = 0
+			r.Rows = insertAtIndex(r.Rows, r.CY+r.CurrentRowOffset, Row{leadingIndent + "", []int{}})
+			r.CX = len(leadingIndent)
 		} else {
-			r.Rows = insertAtIndex(r.Rows, r.CY+r.CurrentRowOffset+1, Row{"", []int{}})
-			r.CX = 0
+			r.Rows = insertAtIndex(r.Rows, r.CY+r.CurrentRowOffset+1, Row{leadingIndent + "", []int{}})
+			r.CX = len(leadingIndent)
 			r.CY += 1
 		}
 
