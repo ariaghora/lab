@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	_ "embed"
 
@@ -21,7 +22,8 @@ const EditorWidth = 1000
 const EditorHeight = 600
 
 type Row struct {
-	Chars string
+	Chars       string
+	CharWidthts []int
 }
 
 type EditorMode int64
@@ -63,6 +65,7 @@ type RaptorCfg struct {
 	Rows             []Row
 	SbarHeight       int
 	ShiftMapper      map[string]string
+	TabWidth         int
 
 	Toasts list.List
 
@@ -136,6 +139,7 @@ func NewEditor() *RaptorCfg {
 			".":  ">",
 			"/":  "?",
 		},
+		TabWidth:  4,
 		Toasts:    *list.New(),
 		sdlFont:   font,
 		sdlWindow: window,
@@ -161,7 +165,7 @@ func (r *RaptorCfg) OpenFile(fileName string) error {
 	}
 
 	if r.NumRows == 0 {
-		r.Rows = append(r.Rows, Row{""})
+		r.Rows = append(r.Rows, Row{"", []int{}})
 		r.NumRows += 1
 	}
 
@@ -273,16 +277,20 @@ func (r *RaptorCfg) DrawScreen() {
 	}
 
 	//=== Render the actual texts
+	w := EstimateCharWidth(r.sdlFont)
 	for y := r.RowOffset; y < r.RowOffset+r.ScreenRows; y += 1 {
 		if y < r.NumRows {
 			r.renderBufferText(
-				int(lineNoColWidth+8),
+				int(lineNoColWidth+8)-w,
 				(y-r.RowOffset)*r.LineHeight,
 				r.Rows[y].Chars,
 				r.LineHeight,
 				r.renderer)
 		}
 	}
+
+	//=== Cursor
+	r.DrawCursor()
 
 	//=== Statusbar
 	r.DrawSBar()
@@ -312,23 +320,15 @@ func (r *RaptorCfg) renderBufferText(x int, y int, text string, lineHeight int, 
 	charOffsetX := x
 	offsetY := y
 
-	relY := y / r.LineHeight
 	relX := 0
 
 	gr := uniseg.NewGraphemes(text)
 	for gr.Next() {
 		c := gr.Str()
 		if c == "\t" {
-			c = "    "
+			c = strings.Repeat(" ", r.TabWidth)
 		}
-		var s *sdl.Surface
-		if r.CX == relX && r.CY == relY {
-			s, _ = r.sdlFont.RenderUTF8Blended(c, sdl.Color{R: 0, G: 0, B: 0, A: 255})
-			renderer.SetDrawColor(255, 255, 255, 255)
-			renderer.FillRect(&sdl.Rect{X: int32(charOffsetX + r.ColOffset), Y: int32(y), W: s.W, H: int32(r.LineHeight)})
-		} else {
-			s, _ = r.sdlFont.RenderUTF8Blended(c, sdl.Color{R: 255, G: 255, B: 255, A: 255})
-		}
+		s, _ := r.sdlFont.RenderUTF8Blended(c, sdl.Color{R: 255, G: 255, B: 255, A: 255})
 		t, _ := renderer.CreateTextureFromSurface(s)
 		t.SetBlendMode(sdl.BLENDMODE_BLEND)
 		renderer.Copy(t, nil, &sdl.Rect{X: int32(charOffsetX + r.ColOffset), Y: int32(offsetY), W: s.W, H: s.H})
@@ -337,16 +337,6 @@ func (r *RaptorCfg) renderBufferText(x int, y int, text string, lineHeight int, 
 
 		s.Free()
 		t.Destroy()
-	}
-	// Hack: when line is an empty string, no text to highlight. Then, draw a dummy cursor
-	if r.CX == relX && r.CY == relY && len(text) == 0 {
-		renderer.SetDrawColor(255, 255, 255, 255)
-		renderer.FillRect(&sdl.Rect{
-			X: int32(charOffsetX + r.ColOffset),
-			Y: int32(y),
-			W: int32(EstimateCharWidth(r.sdlFont)),
-			H: int32(r.LineHeight),
-		})
 	}
 }
 
@@ -374,7 +364,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	cfg.Toasts.PushFront(NewToast("Editing "+fileName, 2, cfg.renderer, cfg.sdlFont))
+	cfg.Toasts.PushFront(NewToast("Editing "+fileName, 1, cfg.renderer, cfg.sdlFont))
 	cfg.Run()
 
 }

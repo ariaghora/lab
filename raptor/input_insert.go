@@ -56,7 +56,7 @@ func (r *RaptorCfg) IMLineBreak() {
 	newLineContent := r.Rows[y].Chars[x:]
 
 	r.Rows[y].Chars = newCurrent
-	r.Rows = insertAtIndex(r.Rows, y+1, Row{newLineContent})
+	r.Rows = insertAtIndex(r.Rows, y+1, Row{newLineContent, []int{}})
 	r.CY += 1
 	r.CX = 0
 	r.NumRows += 1
