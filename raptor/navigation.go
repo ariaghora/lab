@@ -45,7 +45,7 @@ func findPrevWord(words []Word, pos int) *Word {
 }
 
 func (r *RaptorCfg) JumpToNextLine() {
-	if r.CY+r.CurrentRowOffset < r.CurrentFuleNumRows-1 {
+	if r.CY+r.CurrentRowOffset < r.CurrentFileNumRows-1 {
 		r.CY += 1
 		r.CX = 0
 		currentRowStr := r.Rows[r.CY+r.CurrentRowOffset].Chars

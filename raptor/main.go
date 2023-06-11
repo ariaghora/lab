@@ -65,11 +65,13 @@ type RaptorCfg struct {
 	CurrentRowOffset      int
 	CurrentEditorMode     EditorMode
 	CurrentFileName       string
-	CurrentFuleNumRows    int
+	CurrentFileNumRows    int
 	CurrentLineNoColWidth int
 	CurrentScreenCols     int
 	CurrentScreenRows     int
 	ConvertTabToSpace     bool
+	CommandBuffer         string
+	MultiplierBuffer      string
 
 	Toasts list.List
 
@@ -153,7 +155,7 @@ func NewEditor() *RaptorCfg {
 		CurrentColOffset:   0,
 		CurrentScreenCols:  80,
 		CurrentScreenRows:  (EditorHeight - sbarHeight) / lineHeight,
-		CurrentFuleNumRows: 0,
+		CurrentFileNumRows: 0,
 		ConvertTabToSpace:  false,
 
 		sdlFont:   font,
@@ -176,12 +178,12 @@ func (r *RaptorCfg) OpenFile(fileName string) error {
 		r.Rows = append(r.Rows, Row{
 			Chars: line,
 		})
-		r.CurrentFuleNumRows += 1
+		r.CurrentFileNumRows += 1
 	}
 
-	if r.CurrentFuleNumRows == 0 {
+	if r.CurrentFileNumRows == 0 {
 		r.Rows = append(r.Rows, Row{"", []int{}})
-		r.CurrentFuleNumRows += 1
+		r.CurrentFileNumRows += 1
 	}
 
 	r.sdlWindow.SetTitle(fileName)
@@ -213,6 +215,8 @@ func (r *RaptorCfg) HandleKeyPress(ev *sdl.KeyboardEvent) {
 			r.JumpToNextWordBeginning()
 		case sdl.SCANCODE_B:
 			r.JumpToPrevWordBeginning()
+		default:
+			r.HandleNormalCommand(ev)
 		}
 	} else if r.CurrentEditorMode == EditorModeInsert {
 		r.HandleKeyPressInsertMode(ev)
@@ -237,6 +241,7 @@ func (r *RaptorCfg) Run() {
 							r.CX -= 1
 						}
 						r.CurrentEditorMode = EditorModeNormal
+						r.ClearCommandBuffer()
 					}
 
 					r.HandleKeyPress(t)
@@ -279,7 +284,7 @@ func (r *RaptorCfg) DrawScreen() {
 		X: 0, Y: 0, W: int32(lineNoColWidth), H: int32(r.EditorHeight),
 	})
 	for y := 0; y < r.CurrentScreenRows; y += 1 {
-		if y < r.CurrentFuleNumRows {
+		if y < r.CurrentFileNumRows {
 			numStr := strconv.Itoa(y + r.CurrentRowOffset + 1)
 			s, _ := r.sdlFont.RenderUTF8Blended(numStr, r.ColorScheme.Foreground())
 			t, _ := r.renderer.CreateTextureFromSurface(s)
@@ -294,7 +299,7 @@ func (r *RaptorCfg) DrawScreen() {
 	//=== Render the actual texts
 	w := EstimateCharWidth(r.sdlFont)
 	for y := r.CurrentRowOffset; y < r.CurrentRowOffset+r.CurrentScreenRows; y += 1 {
-		if y < r.CurrentFuleNumRows {
+		if y < r.CurrentFileNumRows {
 			r.renderBufferText(
 				int(r.CurrentLineNoColWidth+8)-w,
 				(y-r.CurrentRowOffset)*r.LineHeight,

@@ -38,7 +38,7 @@ func (r *RaptorCfg) IMBackspace() {
 			r.CX = len(r.Rows[y-1].Chars)
 			r.Rows[y-1].Chars += old
 			r.Rows = removeAtIndex(r.Rows, y)
-			r.CurrentFuleNumRows -= 1
+			r.CurrentFileNumRows -= 1
 		}
 	} else {
 		if r.CX > 0 {
@@ -91,7 +91,7 @@ func (r *RaptorCfg) IMLineBreak() {
 	r.Rows = insertAtIndex(r.Rows, y+1, Row{newLineContent, []int{}})
 	r.CY += 1
 	r.CX = len(leadingIdent)
-	r.CurrentFuleNumRows += 1
+	r.CurrentFileNumRows += 1
 }
 
 func (r *RaptorCfg) HandleKeyPressInsertMode(ev *sdl.KeyboardEvent) {

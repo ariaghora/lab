@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
@@ -69,7 +70,7 @@ func (r *RaptorCfg) HandleEnteringInsertMode(ev *sdl.KeyboardEvent) {
 			r.CY += 1
 		}
 
-		r.CurrentFuleNumRows += 1
+		r.CurrentFileNumRows += 1
 	}
 	r.CurrentEditorMode = EditorModeInsert
 }
@@ -96,7 +97,7 @@ func (r *RaptorCfg) HandleKeyPressH() {
 func (r *RaptorCfg) HandleKeyPressJ() {
 	r.CY += 1
 
-	if r.CurrentRowOffset+r.CY == r.CurrentFuleNumRows {
+	if r.CurrentRowOffset+r.CY == r.CurrentFileNumRows {
 		r.CY -= 1
 		return
 	}
@@ -106,7 +107,7 @@ func (r *RaptorCfg) HandleKeyPressJ() {
 		r.CY -= 1
 	}
 
-	if r.CurrentRowOffset-r.CurrentScreenRows >= r.CurrentFuleNumRows {
+	if r.CurrentRowOffset-r.CurrentScreenRows >= r.CurrentFileNumRows {
 		return
 	}
 
@@ -135,4 +136,57 @@ func (r *RaptorCfg) HandleKeyPressK() {
 			r.CX = 0
 		}
 	}
+}
+
+func (r *RaptorCfg) SpawnToast(message string, durationSeconds int) {
+	r.Toasts.PushFront(NewToast(message, durationSeconds, r.renderer, r.sdlFont))
+}
+
+func (r *RaptorCfg) ClearCommandBuffer() {
+	r.CommandBuffer = ""
+	r.MultiplierBuffer = ""
+}
+
+func (r *RaptorCfg) RaiseNormalCommandError(message string) {
+	r.ClearCommandBuffer()
+	r.SpawnToast(message, 1)
+}
+
+func (r *RaptorCfg) HandleNormalCommand(ev *sdl.KeyboardEvent) {
+	var editorCommands = map[string]func(){
+		"dd": func() {
+			r.DeleteRow(r.CY + r.CurrentRowOffset)
+		},
+		"diw": func() {
+			r.SpawnToast("TODO: delete current word", 1)
+		},
+	}
+
+	if ev.Keysym.Scancode == sdl.SCANCODE_RETURN {
+		if r.CommandBuffer != "" {
+			r.SpawnToast("command: "+r.MultiplierBuffer+r.CommandBuffer, 1)
+		}
+		r.ClearCommandBuffer()
+		return
+	} else {
+		c := ev.Keysym.Sym
+		if c >= '0' && c <= '9' {
+			if r.CommandBuffer != "" {
+				r.RaiseNormalCommandError("Command's multiplier number must be entered first")
+				return
+			}
+			r.MultiplierBuffer += string(c)
+		} else if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') {
+			r.CommandBuffer += string(c)
+		}
+	}
+
+	keys := make([]string, 0, len(editorCommands))
+	for k := range editorCommands {
+		if strings.HasPrefix(k, r.CommandBuffer) {
+			keys = append(keys, k)
+		}
+	}
+	fmt.Println(keys)
+
 }

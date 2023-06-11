@@ -56,26 +56,29 @@ func (r *RaptorCfg) tokenize(code string) []Token {
 func (r *RaptorCfg) DrawHighlight(oscWidthCumsums [][]int) {
 	w := EstimateCharWidth(r.sdlFont)
 	for i, row := range r.Rows {
-		tokens := r.tokenize(row.Chars)
-		for _, token := range tokens {
-			sur, _ := r.sdlFont.RenderUTF8Blended(token.Text, token.Color)
-			tex, _ := r.renderer.CreateTextureFromSurface(sur)
-			tex.SetBlendMode(sdl.BLENDMODE_ADD)
-			rect := &sdl.Rect{
-				X: int32(1 + r.CurrentLineNoColWidth + oscWidthCumsums[i][token.Start] - w),
-				Y: int32(i * r.LineHeight),
-				W: int32(sur.W),
-				H: int32(sur.H),
+		if i < r.CurrentFileNumRows {
+
+			tokens := r.tokenize(row.Chars)
+			for _, token := range tokens {
+				sur, _ := r.sdlFont.RenderUTF8Blended(token.Text, token.Color)
+				tex, _ := r.renderer.CreateTextureFromSurface(sur)
+				tex.SetBlendMode(sdl.BLENDMODE_ADD)
+				rect := &sdl.Rect{
+					X: int32(1 + r.CurrentLineNoColWidth + oscWidthCumsums[i][token.Start] - w),
+					Y: int32(i * r.LineHeight),
+					W: int32(sur.W),
+					H: int32(sur.H),
+				}
+
+				bg := r.ColorScheme.Background()
+				r.renderer.SetDrawColor(bg.R, bg.G, bg.B, 255)
+				r.renderer.FillRect(rect)
+
+				r.renderer.Copy(tex, nil, rect)
+
+				sur.Free()
+				tex.Destroy()
 			}
-
-			bg := r.ColorScheme.Background()
-			r.renderer.SetDrawColor(bg.R, bg.G, bg.B, 255)
-			r.renderer.FillRect(rect)
-
-			r.renderer.Copy(tex, nil, rect)
-
-			sur.Free()
-			tex.Destroy()
 		}
 	}
 }

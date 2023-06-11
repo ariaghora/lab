@@ -9,7 +9,7 @@ func (r *RaptorCfg) EstimateOnScreenCharWidthsAndCumsum() ([][]int, [][]int) {
 	rowCharWidths := [][]int{}
 	rowCharWidthCumsums := [][]int{}
 	for i := r.CurrentRowOffset; i < r.CurrentRowOffset+r.CurrentScreenRows; i += 1 {
-		if i < r.CurrentFuleNumRows {
+		if i < r.CurrentFileNumRows {
 
 			widths := []int{}
 			widthCumsums := []int{}
