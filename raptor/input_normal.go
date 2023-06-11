@@ -15,7 +15,7 @@ func (r *RaptorCfg) HandleBufferWriteToFile(ev *sdl.KeyboardEvent) {
 	}
 
 	if ctrl {
-		file, err := os.OpenFile(r.FileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
+		file, err := os.OpenFile(r.CurrentFileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 		if err != nil {
 			panic(err)
 		}
@@ -25,7 +25,8 @@ func (r *RaptorCfg) HandleBufferWriteToFile(ev *sdl.KeyboardEvent) {
 		for i, row := range r.Rows {
 			line := row.Chars
 			if len(line) == 0 {
-				line = "\n"
+				fmt.Fprint(writer, "\n")
+				continue
 			}
 
 			if i > 0 {
@@ -39,18 +40,17 @@ func (r *RaptorCfg) HandleBufferWriteToFile(ev *sdl.KeyboardEvent) {
 			fmt.Println("Error flushing the buffer:", err)
 		}
 
-		r.Toasts.PushFront(NewToast("Saved "+r.FileName, 2, r.renderer, r.sdlFont))
+		r.Toasts.PushFront(NewToast("Saved "+r.CurrentFileName, 2, r.renderer, r.sdlFont))
 	}
 }
 
 func (r *RaptorCfg) CurrentRowChars() string {
-	return r.Rows[r.CY+r.RowOffset].Chars
+	return r.Rows[r.CY+r.CurrentRowOffset].Chars
 }
 
 func (r *RaptorCfg) HandleEnteringInsertMode(ev *sdl.KeyboardEvent) {
 	if ev.Keysym.Scancode == sdl.SCANCODE_A {
-		r.LastInsertMethod = InsertMethodAppend
-		if len(r.Rows[r.RowOffset+r.CY].Chars) > 0 {
+		if len(r.Rows[r.CurrentRowOffset+r.CY].Chars) > 0 {
 			r.CX += 1
 		}
 	} else if ev.Keysym.Scancode == sdl.SCANCODE_O {
@@ -60,28 +60,28 @@ func (r *RaptorCfg) HandleEnteringInsertMode(ev *sdl.KeyboardEvent) {
 		}
 
 		if shifted {
-			r.Rows = insertAtIndex(r.Rows, r.CY+r.RowOffset, Row{"", []int{}})
+			r.Rows = insertAtIndex(r.Rows, r.CY+r.CurrentRowOffset, Row{"", []int{}})
+			r.CX = 0
 		} else {
-			r.Rows = insertAtIndex(r.Rows, r.CY+r.RowOffset+1, Row{"", []int{}})
+			r.Rows = insertAtIndex(r.Rows, r.CY+r.CurrentRowOffset+1, Row{"", []int{}})
 			r.CX = 0
 			r.CY += 1
 		}
 
-		r.LastInsertMethod = InsertMethodBreakLine
-		r.NumRows += 1
+		r.CurrentFuleNumRows += 1
 	}
-	r.EditorMode = EditorModeInsert
+	r.CurrentEditorMode = EditorModeInsert
 }
 
 func (r *RaptorCfg) HandleKeyPressL() {
 	// prevent moving to the right on a single-char line
-	if len(r.Rows[r.CY+r.RowOffset].Chars) == 0 {
+	if len(r.Rows[r.CY+r.CurrentRowOffset].Chars) == 0 {
 		return
 	}
 
 	r.CX += 1
-	if r.CX > len(r.Rows[r.RowOffset+r.CY].Chars)-1 {
-		r.CX = len(r.Rows[r.RowOffset+r.CY].Chars) - 1
+	if r.CX > len(r.Rows[r.CurrentRowOffset+r.CY].Chars)-1 {
+		r.CX = len(r.Rows[r.CurrentRowOffset+r.CY].Chars) - 1
 	}
 }
 
@@ -95,23 +95,23 @@ func (r *RaptorCfg) HandleKeyPressH() {
 func (r *RaptorCfg) HandleKeyPressJ() {
 	r.CY += 1
 
-	if r.RowOffset+r.CY == r.NumRows {
+	if r.CurrentRowOffset+r.CY == r.CurrentFuleNumRows {
 		r.CY -= 1
 		return
 	}
 
-	if r.CY > r.ScreenRows-1 {
-		r.RowOffset += 1
+	if r.CY > r.CurrentScreenRows-1 {
+		r.CurrentRowOffset += 1
 		r.CY -= 1
 	}
 
-	if r.RowOffset-r.ScreenRows >= r.NumRows {
+	if r.CurrentRowOffset-r.CurrentScreenRows >= r.CurrentFuleNumRows {
 		return
 	}
 
 	// fix CX position after succesfully moving vertically
-	if r.CX > len(r.Rows[r.CY+r.RowOffset].Chars)-1 {
-		r.CX = len(r.Rows[r.CY+r.RowOffset].Chars) - 1
+	if r.CX > len(r.Rows[r.CY+r.CurrentRowOffset].Chars)-1 {
+		r.CX = len(r.Rows[r.CY+r.CurrentRowOffset].Chars) - 1
 		if r.CX < 0 {
 			r.CX = 0
 		}
@@ -122,14 +122,14 @@ func (r *RaptorCfg) HandleKeyPressK() {
 	r.CY -= 1
 	if r.CY < 0 {
 		r.CY += 1
-		if r.RowOffset > 0 {
-			r.RowOffset -= 1
+		if r.CurrentRowOffset > 0 {
+			r.CurrentRowOffset -= 1
 		}
 	}
 
 	// fix CX position after succesfully moving vertically
-	if r.CX > len(r.Rows[r.CY+r.RowOffset].Chars)-1 {
-		r.CX = len(r.Rows[r.CY+r.RowOffset].Chars) - 1
+	if r.CX > len(r.Rows[r.CY+r.CurrentRowOffset].Chars)-1 {
+		r.CX = len(r.Rows[r.CY+r.CurrentRowOffset].Chars) - 1
 		if r.CX < 0 {
 			r.CX = 0
 		}

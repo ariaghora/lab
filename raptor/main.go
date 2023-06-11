@@ -48,24 +48,27 @@ type Renderer interface {
 }
 
 type RaptorCfg struct {
-	CX               int
-	CY               int
-	EditorMode       EditorMode
-	EditorWidth      int
-	EditorHeight     int
-	FileName         string
-	FontSize         int
-	LastInsertMethod InsertMethod
-	LineHeight       int
-	ScreenCols       int
-	ScreenRows       int
-	NumRows          int
-	RowOffset        int
-	ColOffset        int
-	Rows             []Row
-	SbarHeight       int
-	ShiftMapper      map[string]string
-	TabWidth         int
+	CX           int
+	CY           int
+	EditorWidth  int
+	EditorHeight int
+	FontSize     int
+	LineHeight   int
+	Rows         []Row
+	SbarHeight   int
+	ShiftMapper  map[string]string
+	TabWidth     int
+	ColorScheme  ColorScheme
+
+	// Buffer-specific
+	CurrentColOffset      int
+	CurrentRowOffset      int
+	CurrentEditorMode     EditorMode
+	CurrentFileName       string
+	CurrentFuleNumRows    int
+	CurrentLineNoColWidth int
+	CurrentScreenCols     int
+	CurrentScreenRows     int
 
 	Toasts list.List
 
@@ -112,20 +115,14 @@ func NewEditor() *RaptorCfg {
 	w, h := window.GetSize()
 
 	cfg := &RaptorCfg{
-		CX:               0,
-		CY:               0,
-		RowOffset:        0,
-		ColOffset:        0,
-		EditorWidth:      int(w),
-		EditorHeight:     int(h),
-		FontSize:         fontSize,
-		LastInsertMethod: InsertMethodInsert,
-		LineHeight:       lineHeight,
-		ScreenCols:       80,
-		ScreenRows:       (EditorHeight - sbarHeight) / lineHeight,
-		NumRows:          0,
-		Rows:             []Row{},
-		SbarHeight:       sbarHeight,
+		CX:           0,
+		CY:           0,
+		EditorWidth:  int(w),
+		EditorHeight: int(h),
+		FontSize:     fontSize,
+		LineHeight:   lineHeight,
+		Rows:         []Row{},
+		SbarHeight:   sbarHeight,
 		ShiftMapper: map[string]string{
 			"`":  "~",
 			"-":  "_",
@@ -139,8 +136,24 @@ func NewEditor() *RaptorCfg {
 			".":  ">",
 			"/":  "?",
 		},
-		TabWidth:  4,
-		Toasts:    *list.New(),
+		TabWidth: 4,
+		Toasts:   *list.New(),
+		ColorScheme: ColorScheme{
+			background:    "#272822",
+			foreground:    "#ffffff",
+			comment:       "#75715e",
+			keyword:       "#f92672",
+			operator:      "#f92672",
+			numberLiteral: "#ae81ff",
+			stringLiteral: "#e6db74",
+		},
+
+		CurrentRowOffset:   0,
+		CurrentColOffset:   0,
+		CurrentScreenCols:  80,
+		CurrentScreenRows:  (EditorHeight - sbarHeight) / lineHeight,
+		CurrentFuleNumRows: 0,
+
 		sdlFont:   font,
 		sdlWindow: window,
 		renderer:  renderer,
@@ -161,21 +174,21 @@ func (r *RaptorCfg) OpenFile(fileName string) error {
 		r.Rows = append(r.Rows, Row{
 			Chars: line,
 		})
-		r.NumRows += 1
+		r.CurrentFuleNumRows += 1
 	}
 
-	if r.NumRows == 0 {
+	if r.CurrentFuleNumRows == 0 {
 		r.Rows = append(r.Rows, Row{"", []int{}})
-		r.NumRows += 1
+		r.CurrentFuleNumRows += 1
 	}
 
 	r.sdlWindow.SetTitle(fileName)
-	r.FileName = fileName
+	r.CurrentFileName = fileName
 	return nil
 }
 
 func (r *RaptorCfg) HandleKeyPress(ev *sdl.KeyboardEvent) {
-	if r.EditorMode == EditorModeNormal {
+	if r.CurrentEditorMode == EditorModeNormal {
 		switch ev.Keysym.Scancode {
 		// entering insert mode
 		case sdl.SCANCODE_I, sdl.SCANCODE_A, sdl.SCANCODE_O:
@@ -199,7 +212,7 @@ func (r *RaptorCfg) HandleKeyPress(ev *sdl.KeyboardEvent) {
 		case sdl.SCANCODE_B:
 			r.JumpToPrevWordBeginning()
 		}
-	} else if r.EditorMode == EditorModeInsert {
+	} else if r.CurrentEditorMode == EditorModeInsert {
 		r.HandleKeyPressInsertMode(ev)
 	}
 }
@@ -218,11 +231,10 @@ func (r *RaptorCfg) Run() {
 			case *sdl.KeyboardEvent:
 				if t.State == sdl.PRESSED {
 					if t.Keysym.Scancode == sdl.SCANCODE_ESCAPE {
-						if r.CX > 0 && r.EditorMode == EditorModeInsert {
+						if r.CX > 0 && r.CurrentEditorMode == EditorModeInsert {
 							r.CX -= 1
 						}
-						r.EditorMode = EditorModeNormal
-						r.LastInsertMethod = InsertMethodInsert
+						r.CurrentEditorMode = EditorModeNormal
 					}
 
 					r.HandleKeyPress(t)
@@ -230,7 +242,6 @@ func (r *RaptorCfg) Run() {
 			}
 		}
 
-		// draw
 		r.DrawScreen()
 		sdl.Delay(33)
 	}
@@ -242,9 +253,9 @@ func (r *RaptorCfg) Destroy() {
 }
 
 func (r *RaptorCfg) DrawSBar() {
-	if r.EditorMode == EditorModeNormal {
+	if r.CurrentEditorMode == EditorModeNormal {
 		r.DrawSBarVisual()
-	} else if r.EditorMode == EditorModeInsert {
+	} else if r.CurrentEditorMode == EditorModeInsert {
 		r.DrawSBarInsert()
 	}
 }
@@ -253,21 +264,22 @@ func (r *RaptorCfg) DrawScreen() {
 	r.renderer.Clear()
 
 	// Text background
-	r.renderer.SetDrawColor(40, 40, 40, 255)
+	bgColor := r.ColorScheme.Background()
+	r.renderer.SetDrawColor(bgColor.R, bgColor.G, bgColor.B, 255)
 	r.renderer.FillRect(&sdl.Rect{X: 0, Y: 0, W: int32(r.EditorWidth), H: int32(r.EditorHeight)})
 
 	//=== Line number area
-	screenMaxLineNo := strconv.Itoa(r.RowOffset + r.ScreenRows)
+	screenMaxLineNo := strconv.Itoa(r.CurrentRowOffset + r.CurrentScreenRows)
 	surf, _ := r.sdlFont.RenderUTF8Blended(screenMaxLineNo, sdl.Color{})
 	lineNoColWidth := surf.W + 20 + 20
 	r.renderer.SetDrawColor(20, 20, 20, 255)
 	r.renderer.FillRect(&sdl.Rect{
 		X: 0, Y: 0, W: int32(lineNoColWidth), H: int32(r.EditorHeight),
 	})
-	for y := 0; y < r.ScreenRows; y += 1 {
-		if y < r.NumRows {
-			numStr := strconv.Itoa(y + r.RowOffset + 1)
-			s, _ := r.sdlFont.RenderUTF8Blended(numStr, sdl.Color{R: 255, G: 255, B: 255, A: 255})
+	for y := 0; y < r.CurrentScreenRows; y += 1 {
+		if y < r.CurrentFuleNumRows {
+			numStr := strconv.Itoa(y + r.CurrentRowOffset + 1)
+			s, _ := r.sdlFont.RenderUTF8Blended(numStr, r.ColorScheme.Foreground())
 			t, _ := r.renderer.CreateTextureFromSurface(s)
 
 			r.renderer.Copy(t, nil, &sdl.Rect{X: 20, Y: int32(y * r.LineHeight), W: s.W, H: s.H})
@@ -275,22 +287,27 @@ func (r *RaptorCfg) DrawScreen() {
 			t.Destroy()
 		}
 	}
+	r.CurrentLineNoColWidth = int(lineNoColWidth)
 
 	//=== Render the actual texts
 	w := EstimateCharWidth(r.sdlFont)
-	for y := r.RowOffset; y < r.RowOffset+r.ScreenRows; y += 1 {
-		if y < r.NumRows {
+	for y := r.CurrentRowOffset; y < r.CurrentRowOffset+r.CurrentScreenRows; y += 1 {
+		if y < r.CurrentFuleNumRows {
 			r.renderBufferText(
-				int(lineNoColWidth+8)-w,
-				(y-r.RowOffset)*r.LineHeight,
+				int(r.CurrentLineNoColWidth+8)-w,
+				(y-r.CurrentRowOffset)*r.LineHeight,
 				r.Rows[y].Chars,
 				r.LineHeight,
 				r.renderer)
 		}
 	}
 
+	oscWidths, oscWidthCumsums := r.EstimateOnScreenCharWidthsAndCumsum()
+	//=== Syntax highlight
+	r.DrawHighlight(oscWidthCumsums)
+
 	//=== Cursor
-	r.DrawCursor()
+	r.DrawCursor(oscWidths[r.CurrentRowOffset+r.CY], oscWidthCumsums[r.CurrentRowOffset+r.CY])
 
 	//=== Statusbar
 	r.DrawSBar()
@@ -320,20 +337,17 @@ func (r *RaptorCfg) renderBufferText(x int, y int, text string, lineHeight int, 
 	charOffsetX := x
 	offsetY := y
 
-	relX := 0
-
 	gr := uniseg.NewGraphemes(text)
 	for gr.Next() {
 		c := gr.Str()
 		if c == "\t" {
 			c = strings.Repeat(" ", r.TabWidth)
 		}
-		s, _ := r.sdlFont.RenderUTF8Blended(c, sdl.Color{R: 255, G: 255, B: 255, A: 255})
+		s, _ := r.sdlFont.RenderUTF8Blended(c, r.ColorScheme.Foreground())
 		t, _ := renderer.CreateTextureFromSurface(s)
 		t.SetBlendMode(sdl.BLENDMODE_BLEND)
-		renderer.Copy(t, nil, &sdl.Rect{X: int32(charOffsetX + r.ColOffset), Y: int32(offsetY), W: s.W, H: s.H})
+		renderer.Copy(t, nil, &sdl.Rect{X: int32(charOffsetX + r.CurrentColOffset), Y: int32(offsetY), W: s.W, H: s.H})
 		charOffsetX += int(s.W)
-		relX += 1
 
 		s.Free()
 		t.Destroy()

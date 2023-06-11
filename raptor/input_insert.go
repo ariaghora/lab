@@ -16,15 +16,15 @@ func insertAtIndex(s []Row, index int, value Row) []Row {
 }
 
 func (r *RaptorCfg) IMInsertChar(c rune) {
-	old := r.Rows[r.RowOffset+r.CY].Chars
-	new := string(old[:r.CX+r.ColOffset]) + string(c) + string(old[r.CX+r.ColOffset:])
-	r.Rows[r.RowOffset+r.CY].Chars = new
+	old := r.Rows[r.CurrentRowOffset+r.CY].Chars
+	new := string(old[:r.CX+r.CurrentColOffset]) + string(c) + string(old[r.CX+r.CurrentColOffset:])
+	r.Rows[r.CurrentRowOffset+r.CY].Chars = new
 	r.CX += 1
 }
 
 func (r *RaptorCfg) IMBackspace() {
-	x := r.CX + r.ColOffset
-	y := r.RowOffset + r.CY
+	x := r.CX + r.CurrentColOffset
+	y := r.CurrentRowOffset + r.CY
 	old := r.Rows[y].Chars
 
 	// if cursor at the letfmost, then merge current line with previous line
@@ -37,7 +37,7 @@ func (r *RaptorCfg) IMBackspace() {
 			r.CX = len(r.Rows[y-1].Chars)
 			r.Rows[y-1].Chars += old
 			r.Rows = removeAtIndex(r.Rows, y)
-			r.NumRows -= 1
+			r.CurrentFuleNumRows -= 1
 		}
 	} else {
 		if r.CX > 0 {
@@ -50,8 +50,8 @@ func (r *RaptorCfg) IMBackspace() {
 }
 
 func (r *RaptorCfg) IMLineBreak() {
-	x := r.CX + r.ColOffset
-	y := r.RowOffset + r.CY
+	x := r.CX + r.CurrentColOffset
+	y := r.CurrentRowOffset + r.CY
 	newCurrent := r.Rows[y].Chars[:x]
 	newLineContent := r.Rows[y].Chars[x:]
 
@@ -59,7 +59,7 @@ func (r *RaptorCfg) IMLineBreak() {
 	r.Rows = insertAtIndex(r.Rows, y+1, Row{newLineContent, []int{}})
 	r.CY += 1
 	r.CX = 0
-	r.NumRows += 1
+	r.CurrentFuleNumRows += 1
 }
 
 func (r *RaptorCfg) HandleKeyPressInsertMode(ev *sdl.KeyboardEvent) {

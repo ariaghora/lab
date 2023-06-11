@@ -45,10 +45,10 @@ func findPrevWord(words []Word, pos int) *Word {
 }
 
 func (r *RaptorCfg) JumpToNextLine() {
-	if r.CY+r.RowOffset < r.NumRows-1 {
+	if r.CY+r.CurrentRowOffset < r.CurrentFuleNumRows-1 {
 		r.CY += 1
 		r.CX = 0
-		currentRowStr := r.Rows[r.CY+r.RowOffset].Chars
+		currentRowStr := r.Rows[r.CY+r.CurrentRowOffset].Chars
 		wlist := splitIntoWords(currentRowStr)
 		if len(wlist) > 0 {
 			firstWord := wlist[0]
@@ -58,7 +58,7 @@ func (r *RaptorCfg) JumpToNextLine() {
 }
 
 func (r *RaptorCfg) JumpToNextWordBeginning() {
-	currentRowStr := r.Rows[r.CY+r.RowOffset].Chars
+	currentRowStr := r.Rows[r.CY+r.CurrentRowOffset].Chars
 	wlist := splitIntoWords(currentRowStr)
 	nextWord := findNextWord(wlist, r.CX)
 
@@ -70,16 +70,16 @@ func (r *RaptorCfg) JumpToNextWordBeginning() {
 }
 
 func (r *RaptorCfg) JumpToPrevWordBeginning() {
-	currentRowStr := r.Rows[r.CY+r.RowOffset].Chars
+	currentRowStr := r.Rows[r.CY+r.CurrentRowOffset].Chars
 	wlist := splitIntoWords(currentRowStr)
 	prevWord := findPrevWord(wlist, r.CX)
 
 	if prevWord != nil {
 		r.CX = prevWord.Start
 	} else {
-		if r.CY+r.RowOffset > 0 {
+		if r.CY+r.CurrentRowOffset > 0 {
 			r.CY -= 1
-			currentRowStr = r.Rows[r.CY+r.RowOffset].Chars
+			currentRowStr = r.Rows[r.CY+r.CurrentRowOffset].Chars
 			wlist = splitIntoWords(currentRowStr)
 			if len(wlist) > 0 {
 				lastWord := wlist[len(wlist)-1]
