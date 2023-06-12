@@ -1,3 +1,5 @@
+/* STB-style helper dynamic array data structure */
+
 #ifndef _ARR_H_
 #define _ARR_H_
 
@@ -10,8 +12,6 @@ struct arr_header_t {
     size_t size;
     size_t cap;
 };
-
-/* Helper dynamic array data structure */
 
 #define arr_header(a) ((arr_header_t *)((char *)(a) - sizeof(arr_header_t)))
 #define arr_size(a) ((a) ? arr_header(a)->size : 0)

@@ -30,6 +30,13 @@ void filebuf_from_file(FileBuf *buf, const char *file_name) {
     if (line) free(line);
 }
 
+void filebuf_close(FileBuf *buf) {
+    for (size_t i = 0; i < arr_size(buf->rows); i++) {
+        arr_free(buf->rows[i].chars);
+    }
+    arr_free(buf->rows);
+}
+
 size_t filebuf_row_no(FileBuf *buf) {
     return arr_size(buf->rows);
 }

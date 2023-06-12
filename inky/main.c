@@ -2,19 +2,22 @@
 
 #include "arr.h"
 #include "inky.h"
+#include "renderer/renderer.h"
 
 int main(int argc, char** argv) {
-    Editor  e = editor_init();
-    FileBuf buf;
+    Editor e = editor_init();
 
+    FileBuf buf;
     editor_open_file(&e, "Makefile", &buf);
 
-    size_t file_row_no = filebuf_row_no(&buf);
-    printf("%ld\n", file_row_no);
+    Renderer r = (Renderer){
+        .e = &e,
+        .w = 800,
+        .h = 600,
+    };
+    renderer_render(&r);
 
-    for (size_t i = 0; i < file_row_no; i++) {
-        printf("%s\n", buf.rows[i].chars);
-    }
+    editor_close_all(&e);
 
     return 0;
 }
