@@ -188,5 +188,11 @@ func (r *RaptorCfg) HandleNormalCommand(ev *sdl.KeyboardEvent) {
 		}
 	}
 	fmt.Println(keys)
-
+	if len(keys) == 1 {
+		r.SpawnToast("Executing "+keys[0], 1)
+		editorCommands[keys[0]]()
+		r.ClearCommandBuffer()
+	} else if len(keys) == 0 {
+		r.RaiseNormalCommandError("Unknown command " + r.CommandBuffer)
+	}
 }

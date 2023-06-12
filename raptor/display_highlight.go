@@ -20,8 +20,13 @@ func (r *RaptorCfg) tokenize(code string) []Token {
 		Type    string
 		Color   sdl.Color
 	}{
-		{Pattern: regexp.MustCompile(`\b(def|return|if|else|for|while|break|continue|pass)\b`), Type: "keyword", Color: r.ColorScheme.Keyword()},
-		{Pattern: regexp.MustCompile(`#.*`), Type: "comment", Color: r.ColorScheme.Comment()},
+		// {Pattern: regexp.MustCompile(`\b(def|return|if|else|for|while|break|continue|pass)\b`), Type: "keyword", Color: r.ColorScheme.Keyword()},
+		// {Pattern: regexp.MustCompile(`#.*`), Type: "comment", Color: r.ColorScheme.Comment()},
+		// {Pattern: regexp.MustCompile(`"[^"]*"`), Type: "string", Color: r.ColorScheme.StringLiteral()},         // String literal enclosed in double quotes
+		// {Pattern: regexp.MustCompile(`\b[0-9]+\b`), Type: "number", Color: r.ColorScheme.NumberLiteral()},      // Number literal
+		// {Pattern: regexp.MustCompile(`\b[\+\-\*\/\=\%]\b`), Type: "operator", Color: r.ColorScheme.Operator()}, // Operators: +, -, *, /, =, %
+		{Pattern: regexp.MustCompile(`\b(int|return|if|else|for|while|break|continue|typedef|struct)\b`), Type: "keyword", Color: r.ColorScheme.Keyword()},
+		{Pattern: regexp.MustCompile(`//.*`), Type: "comment", Color: r.ColorScheme.Comment()},
 		{Pattern: regexp.MustCompile(`"[^"]*"`), Type: "string", Color: r.ColorScheme.StringLiteral()},         // String literal enclosed in double quotes
 		{Pattern: regexp.MustCompile(`\b[0-9]+\b`), Type: "number", Color: r.ColorScheme.NumberLiteral()},      // Number literal
 		{Pattern: regexp.MustCompile(`\b[\+\-\*\/\=\%]\b`), Type: "operator", Color: r.ColorScheme.Operator()}, // Operators: +, -, *, /, =, %

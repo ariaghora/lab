@@ -187,6 +187,7 @@ func (r *RaptorCfg) OpenFile(fileName string) error {
 	}
 
 	r.sdlWindow.SetTitle(fileName)
+	r.sdlWindow.SetResizable(true)
 	r.CurrentFileName = fileName
 	return nil
 }
@@ -273,7 +274,8 @@ func (r *RaptorCfg) DrawScreen() {
 	// Text background
 	bgColor := r.ColorScheme.Background()
 	r.renderer.SetDrawColor(bgColor.R, bgColor.G, bgColor.B, 255)
-	r.renderer.FillRect(&sdl.Rect{X: 0, Y: 0, W: int32(r.EditorWidth), H: int32(r.EditorHeight)})
+	winW, winH := r.sdlWindow.GetSize()
+	r.renderer.FillRect(&sdl.Rect{X: 0, Y: 0, W: winW, H: winH})
 
 	//=== Line number area
 	screenMaxLineNo := strconv.Itoa(r.CurrentRowOffset + r.CurrentScreenRows)
@@ -281,7 +283,7 @@ func (r *RaptorCfg) DrawScreen() {
 	lineNoColWidth := surf.W + 20 + 20
 	r.renderer.SetDrawColor(20, 20, 20, 255)
 	r.renderer.FillRect(&sdl.Rect{
-		X: 0, Y: 0, W: int32(lineNoColWidth), H: int32(r.EditorHeight),
+		X: 0, Y: 0, W: int32(lineNoColWidth), H: winH,
 	})
 	for y := 0; y < r.CurrentScreenRows; y += 1 {
 		if y < r.CurrentFileNumRows {
