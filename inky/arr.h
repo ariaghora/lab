@@ -9,8 +9,8 @@
 
 typedef struct arr_header_t arr_header_t;
 struct arr_header_t {
-    size_t size;
-    size_t cap;
+    long size;
+    long cap;
 };
 
 #define arr_header(a) ((arr_header_t *)((char *)(a) - sizeof(arr_header_t)))

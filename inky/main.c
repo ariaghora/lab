@@ -13,6 +13,7 @@ int main(int argc, char** argv) {
         .offset_y      = 0,
         .rows          = NULL,
         .screen_row_no = 20,
+        .screen_col_no = 80,
     };
     editor_open_file(&e, "Makefile", &buf);
 

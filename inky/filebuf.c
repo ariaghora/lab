@@ -19,7 +19,6 @@ void filebuf_from_file(FileBuf *buf, const char *file_name) {
         // Set current row's text to `line`, along with terminating char
         Row row = (Row){NULL};
         arr_push_n(row.chars, line, char, read - 1);
-        arr_push(row.chars, '\0');
 
         // Add this row to the buffer
         arr_push(buf->rows, row);
@@ -37,6 +36,10 @@ void filebuf_close(FileBuf *buf) {
     arr_free(buf->rows);
 }
 
-inline size_t filebuf_row_no(FileBuf *buf) {
+inline Row filebuf_current_row(FileBuf *buf) {
+    return buf->rows[buf->offset_y + buf->cur_y];
+}
+
+inline int filebuf_row_no(FileBuf *buf) {
     return arr_size(buf->rows);
 }

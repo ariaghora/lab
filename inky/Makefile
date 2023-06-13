@@ -1,5 +1,7 @@
+CFLAGS=-Wall -Werror -pedantic -std=c99 -O3 -lraylib
+
 all:
-	@gcc -o inky.out main.c inky.c arr.c filebuf.c renderer/*.c -Wall -Werror -pedantic -std=c99 -lraylib
+	@gcc -o inky.out *.c renderer/*.c $(CFLAGS)
 
 .PHONY: clean
 clean:

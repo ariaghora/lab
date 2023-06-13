@@ -12,17 +12,16 @@ struct Row {
 
 // Managing content and editing states for a single file
 struct FileBuf {
-    size_t cur_x, cur_y;
-    size_t offset_x, offset_y;
-    size_t screen_row_no;
-    Row   *rows;
+    int  cur_x, cur_y;
+    int  offset_x, offset_y;
+    int  screen_row_no;
+    int  screen_col_no;
+    Row *rows;
 };
 
-// Read file content line by line and store them as buffer's rows
 void filebuf_from_file(FileBuf *buf, const char *file_name);
 void filebuf_close(FileBuf *buf);
-
-// A helper to get number of line of the file loaded in a buffer
-size_t filebuf_row_no(FileBuf *buf);
+Row  filebuf_current_row(FileBuf *buf);
+int  filebuf_row_no(FileBuf *buf);
 
 #endif

@@ -5,7 +5,7 @@
 EditorConfig editor_config_default(void) {
     return (EditorConfig){
         .font_height = 20,
-        .line_height = 30,
+        .line_height = 20,
     };
 }
 
