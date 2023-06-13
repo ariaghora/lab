@@ -14,6 +14,7 @@ struct Row {
 struct FileBuf {
     size_t cur_x, cur_y;
     size_t offset_x, offset_y;
+    size_t screen_row_no;
     Row   *rows;
 };
 

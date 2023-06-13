@@ -18,7 +18,7 @@ struct arr_header_t {
 #define arr_full(a) ((a) ? (arr_size(a) == arr_header(a)->cap) : 1)
 #define arr_push(a, item)                          \
     arr_full(a) ? a = arr_grow(a, sizeof(*a)) : 0, \
-                  a[arr_header(a)->size++] = item
+                  a[arr_header(a)->size++] = (item)
 
 #define arr_push_n(arr, items, type, n)          \
     do {                                         \

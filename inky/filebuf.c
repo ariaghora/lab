@@ -37,6 +37,6 @@ void filebuf_close(FileBuf *buf) {
     arr_free(buf->rows);
 }
 
-size_t filebuf_row_no(FileBuf *buf) {
+inline size_t filebuf_row_no(FileBuf *buf) {
     return arr_size(buf->rows);
 }

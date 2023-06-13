@@ -5,21 +5,29 @@
 
 #include "filebuf.h"
 
-typedef struct Editor Editor;
+typedef struct EditorConfig EditorConfig;
+typedef struct Editor       Editor;
 
 //------------------------------------------------------------------------------
 // The API
 //------------------------------------------------------------------------------
 
-// Main structure that holds all editor's state. It enables loading multiple
-// files (i.e., each of which into a buffer).
-struct Editor {
-    int      file_buff_no;
-    FileBuf* file_buf[MAX_FILE_BUF_NO];
-
+struct EditorConfig {
     int font_height;
     int line_height;
 };
+
+// Main structure that holds all editor's state. It enables loading multiple
+// files (i.e., each of which into a buffer).
+struct Editor {
+    int          file_buff_no;
+    FileBuf*     file_buf[MAX_FILE_BUF_NO];
+    FileBuf*     active_buf;
+    EditorConfig cfg;
+};
+
+// Initialize default editor config
+EditorConfig editor_config_default(void);
 
 // Initialize an editor instance. There should be only one instance of editor
 // in a project.

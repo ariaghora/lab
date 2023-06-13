@@ -5,19 +5,20 @@
 #include "renderer/renderer.h"
 
 int main(int argc, char** argv) {
-    Editor e = editor_init();
-
-    FileBuf buf;
+    Editor  e   = editor_init();
+    FileBuf buf = {
+        .cur_x         = 0,
+        .cur_y         = 0,
+        .offset_x      = 0,
+        .offset_y      = 0,
+        .rows          = NULL,
+        .screen_row_no = 20,
+    };
     editor_open_file(&e, "Makefile", &buf);
 
-    Renderer r = (Renderer){
-        .e = &e,
-        .w = 800,
-        .h = 600,
-    };
+    Renderer r = renderer_init(&e, 800, 400);
     renderer_render(&r);
 
     editor_close_all(&e);
-
     return 0;
 }
