@@ -5,5 +5,7 @@
 
 void cmd_inc_cx(FileBuf *buf, int amount);
 void cmd_inc_cy(FileBuf *buf, int amount);
+void cmd_next_word_start(FileBuf *buf, int amount);
+void cmd_prev_word_start(FileBuf *buf, int amount);
 
 #endif

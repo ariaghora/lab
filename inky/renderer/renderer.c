@@ -9,14 +9,13 @@
 Renderer renderer_init(Editor *e, int w, int h) {
     SetTraceLogLevel(LOG_NONE);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-    SetConfigFlags(FLAG_WINDOW_HIGHDPI);
 
     InitWindow(w, h, "Inky");
     SetTargetFPS(30);
 
     // Set up editor font
     Font f = LoadFont("IosevkaNerdFont-Regular.ttf");
-    SetTextureFilter(f.texture, TEXTURE_FILTER_BILINEAR);
+    SetTextureFilter(f.texture, TEXTURE_FILTER_TRILINEAR);
 
     Renderer r = (Renderer){
         .e           = e,
@@ -86,10 +85,12 @@ void renderer_render_active_buffer(Renderer *r, FileBuf *buf) {
 }
 
 void handle_key_press(Renderer *r) {
-    if (IsKeyPressed(KEY_L)) input_handle_key_l(r);
+    if (IsKeyPressed(KEY_B)) input_handle_key_b(r);
     if (IsKeyPressed(KEY_H)) input_handle_key_h(r);
     if (IsKeyPressed(KEY_J)) input_handle_key_j(r);
     if (IsKeyPressed(KEY_K)) input_handle_key_k(r);
+    if (IsKeyPressed(KEY_L)) input_handle_key_l(r);
+    if (IsKeyPressed(KEY_W)) input_handle_key_w(r);
 }
 
 void renderer_render(Renderer *r) {
