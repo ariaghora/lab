@@ -17,7 +17,7 @@ int main(int argc, char** argv) {
     };
     editor_open_file(&e, "Makefile", &buf);
 
-    Renderer r = renderer_init(&e, 800, 400);
+    Renderer r = renderer_init(&e, 1000, 600);
     renderer_render(&r);
 
     editor_close_all(&e);

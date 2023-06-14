@@ -17,13 +17,17 @@ struct EditorConfig {
     int line_height;
 };
 
+typedef enum { INPUT_MODE_NORMAL,
+               INPUT_MODE_INSERT } EditorInputMode;
+
 // Main structure that holds all editor's state. It enables loading multiple
 // files (i.e., each of which into a buffer).
 struct Editor {
-    int          file_buff_no;
-    FileBuf*     file_buf[MAX_FILE_BUF_NO];
-    FileBuf*     active_buf;
-    EditorConfig cfg;
+    int             file_buff_no;
+    FileBuf*        file_buf[MAX_FILE_BUF_NO];
+    FileBuf*        active_buf;
+    EditorConfig    cfg;
+    EditorInputMode input_mode;
 };
 
 // Initialize default editor config

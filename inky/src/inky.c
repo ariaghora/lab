@@ -14,6 +14,7 @@ Editor editor_init(void) {
         .file_buff_no = 0,
         .cfg          = editor_config_default(),
         .active_buf   = NULL,
+        .input_mode   = INPUT_MODE_NORMAL,
     };
 }
 

@@ -6,8 +6,11 @@
 void input_handle_key_b(Renderer *r);
 void input_handle_key_w(Renderer *r);
 void input_handle_key_h(Renderer *r);
+void input_handle_key_i(Renderer *r);
 void input_handle_key_j(Renderer *r);
 void input_handle_key_k(Renderer *r);
 void input_handle_key_l(Renderer *r);
+
+void input_handle_key_esc(Renderer *r);
 
 #endif

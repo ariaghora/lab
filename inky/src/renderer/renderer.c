@@ -12,6 +12,7 @@ Renderer renderer_init(Editor *e, int w, int h) {
 
     InitWindow(w, h, "Inky");
     SetTargetFPS(30);
+    SetExitKey(0);
 
     // Set up editor font
     Font f = LoadFont("IosevkaNerdFont-Regular.ttf");
@@ -24,6 +25,18 @@ Renderer renderer_init(Editor *e, int w, int h) {
         .editor_font = f,
     };
     return r;
+}
+
+void handle_key_press(Renderer *r) {
+    if (IsKeyPressed(KEY_B)) input_handle_key_b(r);
+    if (IsKeyPressed(KEY_H)) input_handle_key_h(r);
+    if (IsKeyPressed(KEY_I)) input_handle_key_i(r);
+    if (IsKeyPressed(KEY_J)) input_handle_key_j(r);
+    if (IsKeyPressed(KEY_K)) input_handle_key_k(r);
+    if (IsKeyPressed(KEY_L)) input_handle_key_l(r);
+    if (IsKeyPressed(KEY_W)) input_handle_key_w(r);
+
+    if (IsKeyPressed(KEY_ESCAPE)) input_handle_key_esc(r);
 }
 
 void renderer_render_active_buffer(Renderer *r, FileBuf *buf) {
@@ -84,13 +97,33 @@ void renderer_render_active_buffer(Renderer *r, FileBuf *buf) {
     DrawRectangleLines(cur_off, cur_y * cur_h, cur_w + r->editor_font.glyphPadding / 2, cur_h, RED);
 }
 
-void handle_key_press(Renderer *r) {
-    if (IsKeyPressed(KEY_B)) input_handle_key_b(r);
-    if (IsKeyPressed(KEY_H)) input_handle_key_h(r);
-    if (IsKeyPressed(KEY_J)) input_handle_key_j(r);
-    if (IsKeyPressed(KEY_K)) input_handle_key_k(r);
-    if (IsKeyPressed(KEY_L)) input_handle_key_l(r);
-    if (IsKeyPressed(KEY_W)) input_handle_key_w(r);
+void renderer_render_statusbar(Renderer *r) {
+    int   bar_h    = 32;
+    int   bar_x    = 0;
+    int   bar_rpad = 10;
+    int   bar_y    = GetScreenHeight() - bar_h;
+    Color bar_color;
+    char  text[30];
+
+    switch (r->e->input_mode) {
+        case INPUT_MODE_NORMAL: {
+            memcpy(text, "Normal", 6);
+            bar_color = (Color){255, 0, 0, 255};
+            break;
+        }
+        case INPUT_MODE_INSERT: {
+            memcpy(text, "Insert", 6);
+            bar_color = (Color){0, 0, 255, 255};
+            break;
+        }
+    }
+
+    DrawRectangle(bar_x, bar_y, GetScreenWidth(), bar_h, bar_color);
+
+    int w = MeasureTextEx(r->editor_font, text, r->e->cfg.font_height, 0).x;
+    DrawTextEx(r->editor_font, text,
+               (Vector2){GetScreenWidth() - w - bar_rpad, bar_y + (bar_h / 2) - (r->e->cfg.font_height / 2)},
+               r->e->cfg.font_height, 0, WHITE);
 }
 
 void renderer_render(Renderer *r) {
@@ -105,6 +138,7 @@ void renderer_render(Renderer *r) {
         // Render active buffer
         FileBuf *buf = r->e->active_buf;
         renderer_render_active_buffer(r, buf);
+        renderer_render_statusbar(r);
         // TODO: render all buffers with a certain strategy
         //----
 
