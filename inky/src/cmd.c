@@ -117,20 +117,64 @@ void cmd_next_word_start(Editor* e, int amount) {
             break;
         }
     }
+
+    // Try to move to the next row at following cases as long as cursor is not at the
+    // last line of buffer:
+    // Case 1: reaching last word of the row,
+    // Case 2: empty line
+    if (count > 0) {  // Case 1
+        if (e->active_buf->cur_x + e->active_buf->offset_x >= words[count - 1].start) {
+            if (e->active_buf->cur_y + e->active_buf->offset_y < arr_size(e->active_buf->rows) - 1) {
+                e->active_buf->cur_x    = 0;
+                e->active_buf->offset_x = 0;
+                e->active_buf->cur_y += 1;
+                // TODO: We want to skip empty space
+            }
+        }
+    } else if (count == 0) {  // Case 2
+        e->active_buf->cur_x    = 0;
+        e->active_buf->offset_x = 0;
+        e->active_buf->cur_y += 1;
+    }
 }
 
 // movie to the previous word's start
 void cmd_prev_word_start(Editor* e, int amount) {
-    Word words[1024] = {0};
-    int  count       = 0;
-
-    char* line = filebuf_current_row(e->active_buf).chars;
+    Word  words[1024] = {0};
+    int   count       = 0;
+    char* line        = filebuf_current_row(e->active_buf).chars;
     tokenize_string(line, arr_size(line), punctuations, words, &count);
 
     for (int i = count - 1; i >= 0; i--) {
         if (e->active_buf->cur_x + e->active_buf->offset_x > words[i].start) {
             e->active_buf->cur_x = words[i].start;
             break;
+        }
+    }
+
+    // Try to move one line up when finding previous word's start
+    int move_up = 0;
+    if (count > 0 && (e->active_buf->cur_y + e->active_buf->offset_y > 0)) {
+        if (e->active_buf->cur_x + e->active_buf->offset_x <= words[0].end) {
+            move_up = 1;
+        }
+    } else if (count == 0 && (e->active_buf->cur_y + e->active_buf->offset_y > 0)) {
+        move_up = 1;
+    }
+
+    if (move_up) {
+        e->active_buf->cur_y -= 1;
+        Word  words[1024] = {0};
+        int   count       = 0;
+        char* line        = filebuf_current_row(e->active_buf).chars;
+        tokenize_string(line, arr_size(line), punctuations, words, &count);
+        if (count > 0) {
+            tokenize_string(line, arr_size(line), punctuations, words, &count);
+            e->active_buf->cur_x = words[count - 1].start;
+            // TODO: handle offset x when the last word is beyond screen column
+        } else {
+            e->active_buf->cur_x    = 0;
+            e->active_buf->offset_x = 0;
         }
     }
 }
