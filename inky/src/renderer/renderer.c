@@ -1,10 +1,36 @@
 #include "renderer.h"
 
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "../arr.h"
-#include "input.h"
+#include "../cmd.h"
+
+//------------------------------------------------------------------------------
+// A list mapping from character sequence (in normal mode) to the corresponding
+// command.
+//------------------------------------------------------------------------------
+
+EditorCommand normal_editor_commands[] = {
+    // Navigations
+    {.cseq = "h", .cmd_func = cmd_dec_cx},
+    {.cseq = "j", .cmd_func = cmd_inc_cy},
+    {.cseq = "k", .cmd_func = cmd_dec_cy},
+    {.cseq = "l", .cmd_func = cmd_inc_cx},
+    {.cseq = "w", .cmd_func = cmd_next_word_start},
+    {.cseq = "b", .cmd_func = cmd_prev_word_start},
+
+    // Altering
+    {.cseq = "dd", .cmd_func = cmd_del_current_line},
+    {.cseq = "dw", .cmd_func = cmd_del_current_line},
+
+    {.cseq = "i", .cmd_func = cmd_enter_input_mode},
+};
+
+//------------------------------------------------------------------------------
+//
+//
 
 Renderer renderer_init(Editor *e, int w, int h) {
     SetTraceLogLevel(LOG_NONE);
@@ -28,15 +54,40 @@ Renderer renderer_init(Editor *e, int w, int h) {
 }
 
 void handle_key_press(Renderer *r) {
-    if (IsKeyPressed(KEY_B)) input_handle_key_b(r);
-    if (IsKeyPressed(KEY_H)) input_handle_key_h(r);
-    if (IsKeyPressed(KEY_I)) input_handle_key_i(r);
-    if (IsKeyPressed(KEY_J)) input_handle_key_j(r);
-    if (IsKeyPressed(KEY_K)) input_handle_key_k(r);
-    if (IsKeyPressed(KEY_L)) input_handle_key_l(r);
-    if (IsKeyPressed(KEY_W)) input_handle_key_w(r);
+    if (r->e->input_mode == INPUT_MODE_NORMAL) {
+        char *cmdbuf = r->e->cmd_buf;
 
-    if (IsKeyPressed(KEY_ESCAPE)) input_handle_key_esc(r);
+        char c = GetCharPressed();
+        if (c >= 'a' && c <= 'z')
+            arr_push(r->e->cmd_buf, c);
+
+        // find command candidates to execture
+        EditorCommand candidate_cmd[sizeof(normal_editor_commands) / sizeof(normal_editor_commands[0])];
+        int           cnt = 0;
+        for (size_t i = 0; i < sizeof(normal_editor_commands) / sizeof(normal_editor_commands[0]); i++) {
+            if (arr_size(cmdbuf) > 0) {
+                if (strnstr(normal_editor_commands[i].cseq, cmdbuf, arr_size(cmdbuf))) {
+                    candidate_cmd[cnt++] = normal_editor_commands[i];
+                }
+            }
+        }
+        // We only execute the command if only match found. Then clear the command
+        // buffer. Otherwise, if we have something on command buffer (and mul buffer),
+        // but no match found, then the command is unknown, so clear the cmd buffer.
+        if (cnt == 1) {
+            candidate_cmd[0].cmd_func(r->e, 1);
+            editor_clear_cmd_buffer(r->e);
+        } else if (cnt == 0 && (arr_size(cmdbuf) + arr_size(r->e->mul_buf) > 0)) {
+            editor_clear_cmd_buffer(r->e);
+        }
+    }
+
+    // From whatever mode, when user presses escape key, we will go back to the
+    // normal mode
+    if (IsKeyPressed(KEY_ESCAPE)) {
+        r->e->input_mode = INPUT_MODE_NORMAL;
+        editor_clear_cmd_buffer(r->e);
+    }
 }
 
 void renderer_render_active_buffer(Renderer *r, FileBuf *buf) {
@@ -81,7 +132,7 @@ void renderer_render_active_buffer(Renderer *r, FileBuf *buf) {
 
             DrawTextEx(r->editor_font, line,
                        (Vector2){buf->offset_x, i * r->e->cfg.line_height},
-                       r->e->cfg.font_height, 0, BLACK);
+                       r->e->cfg.font_height, 0, LIGHTGRAY);
             arr_free(line);
         }
     }
@@ -103,16 +154,20 @@ void renderer_render_statusbar(Renderer *r) {
     int   bar_rpad = 10;
     int   bar_y    = GetScreenHeight() - bar_h;
     Color bar_color;
-    char  text[30];
+    char  mode_text[30];
+    char  cmd_text[30];
 
     switch (r->e->input_mode) {
         case INPUT_MODE_NORMAL: {
-            memcpy(text, "Normal", 6);
+            memcpy(mode_text, "Normal", 6);
             bar_color = (Color){255, 0, 0, 255};
+
+            memcpy(cmd_text, r->e->cmd_buf, arr_size(r->e->cmd_buf));
+            cmd_text[arr_size(r->e->cmd_buf)] = 0;
             break;
         }
         case INPUT_MODE_INSERT: {
-            memcpy(text, "Insert", 6);
+            memcpy(mode_text, "Insert", 6);
             bar_color = (Color){0, 0, 255, 255};
             break;
         }
@@ -120,10 +175,15 @@ void renderer_render_statusbar(Renderer *r) {
 
     DrawRectangle(bar_x, bar_y, GetScreenWidth(), bar_h, bar_color);
 
-    int w = MeasureTextEx(r->editor_font, text, r->e->cfg.font_height, 0).x;
-    DrawTextEx(r->editor_font, text,
+    int w = MeasureTextEx(r->editor_font, mode_text, r->e->cfg.font_height, 0).x;
+    DrawTextEx(r->editor_font, mode_text,
                (Vector2){GetScreenWidth() - w - bar_rpad, bar_y + (bar_h / 2) - (r->e->cfg.font_height / 2)},
                r->e->cfg.font_height, 0, WHITE);
+
+    // rendering command buffer's command
+    DrawTextEx(r->editor_font, cmd_text,
+               (Vector2){0, bar_y + (bar_h / 2) - (r->e->cfg.font_height / 2)},
+               r->e->cfg.font_height, 0, GREEN);
 }
 
 void renderer_render(Renderer *r) {
@@ -133,7 +193,7 @@ void renderer_render(Renderer *r) {
 
         //---- Drawing section
         BeginDrawing();
-        ClearBackground(WHITE);
+        ClearBackground(DARKGRAY);
 
         // Render active buffer
         FileBuf *buf = r->e->active_buf;
@@ -146,4 +206,5 @@ void renderer_render(Renderer *r) {
     }
 
     CloseWindow();
+    UnloadFont(r->editor_font);
 }

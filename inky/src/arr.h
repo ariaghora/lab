@@ -27,6 +27,7 @@ struct arr_header_t {
         }                                        \
     } while (0)
 
+void *arr_del(void *arr, size_t idx, size_t item_size);
 void *arr_grow(void *arr, size_t item_size);
 void  arr_free(void *arr);
 

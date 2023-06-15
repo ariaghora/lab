@@ -5,8 +5,6 @@
 
 #include "../inky.h"
 
-#define MAX_TREE_CHILDREN 10
-
 typedef struct Renderer   Renderer;
 typedef struct LayoutTree LayoutTree;
 typedef struct Viewport   Viewport;

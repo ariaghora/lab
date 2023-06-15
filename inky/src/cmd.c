@@ -63,55 +63,73 @@ void tokenize_string(char* str, int str_len, char* delimiters, Word* out_words, 
 // Editor command implementations
 //------------------------------------------------------------------------------
 
-// moving n characters horizontally
-void cmd_inc_cx(FileBuf* buf, int amount) {
-    buf->cur_x += amount;
+void cmd_enter_input_mode(Editor* e, int amount) {
+    e->input_mode = INPUT_MODE_INSERT;
+}
 
-    char* line = filebuf_current_row(buf).chars;
-    if (buf->cur_x + buf->offset_x > arr_size(line) - 1) buf->cur_x = arr_size(line) - 1;
-    if (buf->cur_x + buf->offset_x < 0) buf->cur_x = 0;
+// moving n characters horizontally
+void cmd_inc_cx(Editor* e, int amount) {
+    e->active_buf->cur_x += amount;
+
+    char* line = filebuf_current_row(e->active_buf).chars;
+    if (e->active_buf->cur_x + e->active_buf->offset_x > arr_size(line) - 1) e->active_buf->cur_x = arr_size(line) - 1;
+    if (e->active_buf->cur_x + e->active_buf->offset_x < 0) e->active_buf->cur_x = 0;
+}
+
+void cmd_dec_cx(Editor* e, int amount) {
+    cmd_inc_cx(e, -amount);
 }
 
 // moving n lines vertically
-void cmd_inc_cy(FileBuf* buf, int amount) {
-    buf->cur_y += amount;
+void cmd_inc_cy(Editor* e, int amount) {
+    e->active_buf->cur_y += amount;
 
-    if ((buf->cur_y + buf->offset_y) < 0) buf->cur_y = 0;
-    if ((buf->cur_y + buf->offset_y) > arr_size(buf->rows) - 1) buf->cur_y = arr_size(buf->rows) - 1;
+    if ((e->active_buf->cur_y + e->active_buf->offset_y) < 0) e->active_buf->cur_y = 0;
+    if ((e->active_buf->cur_y + e->active_buf->offset_y) > arr_size(e->active_buf->rows) - 1)
+        e->active_buf->cur_y = arr_size(e->active_buf->rows) - 1;
 
     // Prevent cursor exceeding allowed linea area after moving lines
     // above/below. It does not move along x-axis, but it performs cur_x
     // checking and adjust accordingly.
-    cmd_inc_cx(buf, 0);
+    cmd_inc_cx(e, 0);
+}
+void cmd_dec_cy(Editor* e, int amount) {
+    cmd_inc_cy(e, -amount);
+}
+
+void cmd_del_current_line(Editor* e, int amount) {
+    int cur_line = e->active_buf->cur_y + e->active_buf->offset_y;
+    arr_free(e->active_buf->rows[cur_line].chars);
+    arr_del(e->active_buf->rows, cur_line, sizeof(Row));
 }
 
 // movie to the next word's start
-void cmd_next_word_start(FileBuf* buf, int amount) {
+void cmd_next_word_start(Editor* e, int amount) {
     Word words[1024] = {0};
     int  count       = 0;
 
-    char* line = filebuf_current_row(buf).chars;
+    char* line = filebuf_current_row(e->active_buf).chars;
     tokenize_string(line, arr_size(line), punctuations, words, &count);
 
     for (int i = 0; i < count; i++) {
-        if (buf->cur_x + buf->offset_x < words[i].start) {
-            buf->cur_x = words[i].start;
+        if (e->active_buf->cur_x + e->active_buf->offset_x < words[i].start) {
+            e->active_buf->cur_x = words[i].start;
             break;
         }
     }
 }
 
 // movie to the previous word's start
-void cmd_prev_word_start(FileBuf* buf, int amount) {
+void cmd_prev_word_start(Editor* e, int amount) {
     Word words[1024] = {0};
     int  count       = 0;
 
-    char* line = filebuf_current_row(buf).chars;
+    char* line = filebuf_current_row(e->active_buf).chars;
     tokenize_string(line, arr_size(line), punctuations, words, &count);
 
     for (int i = count - 1; i >= 0; i--) {
-        if (buf->cur_x + buf->offset_x > words[i].start) {
-            buf->cur_x = words[i].start;
+        if (e->active_buf->cur_x + e->active_buf->offset_x > words[i].start) {
+            e->active_buf->cur_x = words[i].start;
             break;
         }
     }
