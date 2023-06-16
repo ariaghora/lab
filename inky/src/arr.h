@@ -27,6 +27,20 @@ struct arr_header_t {
         }                                        \
     } while (0)
 
+#define arr_insert(arr, idx, item)                           \
+    do {                                                     \
+        if (arr_full(arr)) {                                 \
+            (arr) = arr_grow((arr), sizeof(*(arr)));         \
+        }                                                    \
+        if ((arr) && (idx) <= arr_size(arr)) {               \
+            for (size_t i = arr_size(arr); i > (idx); --i) { \
+                (arr)[i] = (arr)[i - 1];                     \
+            }                                                \
+            (arr)[idx] = (item);                             \
+            ++arr_header(arr)->size;                         \
+        }                                                    \
+    } while (0)
+
 void *arr_del(void *arr, size_t idx, size_t item_size);
 void *arr_grow(void *arr, size_t item_size);
 void  arr_free(void *arr);

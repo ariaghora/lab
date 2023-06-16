@@ -80,6 +80,14 @@ void handle_key_press(Renderer *r) {
         } else if (cnt == 0 && (arr_size(cmdbuf) + arr_size(r->e->mul_buf) > 0)) {
             editor_clear_cmd_buffer(r->e);
         }
+    } else if (r->e->input_mode == INPUT_MODE_INSERT) {
+        char c = GetCharPressed();
+        if (isprint(c)) {
+            int line_idx = r->e->active_buf->cur_y + r->e->active_buf->offset_y;
+            int col_idx  = r->e->active_buf->cur_x + r->e->active_buf->offset_x;
+            arr_insert(r->e->active_buf->rows[line_idx].chars, col_idx, c);
+            ++r->e->active_buf->cur_x;
+        }
     }
 
     // From whatever mode, when user presses escape key, we will go back to the
