@@ -93,6 +93,7 @@ void cmd_inc_cy(Editor* e, int amount) {
     // checking and adjust accordingly.
     cmd_inc_cx(e, 0);
 }
+
 void cmd_dec_cy(Editor* e, int amount) {
     cmd_inc_cy(e, -amount);
 }
@@ -101,6 +102,17 @@ void cmd_del_current_line(Editor* e, int amount) {
     int cur_line = e->active_buf->cur_y + e->active_buf->offset_y;
     arr_free(e->active_buf->rows[cur_line].chars);
     arr_del(e->active_buf->rows, cur_line, sizeof(Row));
+
+    // when the last line deleted, move cursor upward
+    if (e->active_buf->cur_y + e->active_buf->offset_y >= arr_size(e->active_buf->rows) - 1 &&
+        e->active_buf->cur_y + e->active_buf->offset_y > 0)
+        e->active_buf->cur_y -= 1;
+
+    // If all lines are deleted, then insert a placeholder row with empty
+    // string to leave cursor intact.
+    if (arr_size(e->active_buf->rows) == 0) {
+        arr_push(e->active_buf->rows, (Row){NULL});
+    }
 }
 
 // movie to the next word's start
