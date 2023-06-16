@@ -43,6 +43,7 @@ struct arr_header_t {
 
 void *arr_del(void *arr, size_t idx, size_t item_size);
 void *arr_grow(void *arr, size_t item_size);
+void *arr_copy(void *arr, size_t start, size_t end, size_t item_size);
 void  arr_free(void *arr);
 
 #endif

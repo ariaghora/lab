@@ -13,6 +13,32 @@ void *arr_grow(void *arr, size_t item_size) {
     return (char *)(new_arr) + sizeof(struct arr_header_t);
 }
 
+void *arr_copy(void *arr, size_t start, size_t end, size_t item_size) {
+    if (!arr || start >= arr_size(arr) || end > arr_size(arr) || start > end) {
+        return NULL;  // Array is NULL or indexes are out of bounds.
+    }
+
+    // Calculate number of elements to copy and allocate new array.
+    size_t n = end - start;
+    if (n == 0) return NULL;
+
+    void *new_arr = malloc(sizeof(struct arr_header_t) + n * item_size);
+    if (!new_arr) {
+        return NULL;  // Allocation failed.
+    }
+
+    // Set up the header for the new array.
+    struct arr_header_t *header = (struct arr_header_t *)new_arr;
+    header->size                = n;
+    header->cap                 = n;
+    new_arr                     = (char *)new_arr + sizeof(struct arr_header_t);
+
+    // Copy items from the source array to the new array.
+    memcpy(new_arr, (char *)arr + start * item_size, n * item_size);
+
+    return new_arr;
+}
+
 void *arr_del(void *arr, size_t idx, size_t item_size) {
     if (!arr || idx >= arr_size(arr)) {
         return NULL;  // Array is NULL or index is out of bounds.

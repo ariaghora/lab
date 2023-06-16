@@ -17,6 +17,7 @@ void cmd_dec_cx(Editor *e, int amount);
 void cmd_inc_cy(Editor *e, int amount);
 void cmd_dec_cy(Editor *e, int amount);
 void cmd_del_current_line(Editor *e, int amount);
+void cmd_line_break(Editor *e, int amount);
 void cmd_next_word_start(Editor *e, int amount);
 void cmd_prev_word_start(Editor *e, int amount);
 

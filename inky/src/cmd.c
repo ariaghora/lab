@@ -150,6 +150,29 @@ void cmd_next_word_start(Editor* e, int amount) {
     }
 }
 
+void cmd_line_break(Editor* e, int amount) {
+    int   line_idx    = e->active_buf->cur_y + e->active_buf->offset_y;
+    int   col_idx     = e->active_buf->cur_x + e->active_buf->offset_x;
+    char* line        = e->active_buf->rows[line_idx].chars;
+    char* new_current = arr_copy(line, 0, col_idx, sizeof(char));
+    char* new_next    = arr_copy(line, col_idx, arr_size(line), sizeof(char));
+
+    // free old current row's content and replace with the new one. Then
+    // move cursor one line below
+    arr_free(e->active_buf->rows[line_idx].chars);
+    e->active_buf->rows[line_idx].chars = new_current;
+    e->active_buf->cur_y++;
+
+    // insert new row at cur_y with new content
+    line_idx = e->active_buf->cur_y + e->active_buf->offset_y;
+    arr_insert(e->active_buf->rows, line_idx, (Row){new_next});
+
+    // x position should be in the beginning of the row
+    // TODO: smart indent
+    e->active_buf->cur_x    = 0;
+    e->active_buf->offset_x = 0;
+}
+
 // movie to the previous word's start
 void cmd_prev_word_start(Editor* e, int amount) {
     Word  words[1024] = {0};

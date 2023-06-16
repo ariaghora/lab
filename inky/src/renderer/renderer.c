@@ -81,12 +81,19 @@ void handle_key_press(Renderer *r) {
             editor_clear_cmd_buffer(r->e);
         }
     } else if (r->e->input_mode == INPUT_MODE_INSERT) {
-        char c = GetCharPressed();
+        char c        = GetCharPressed();
+        int  line_idx = r->e->active_buf->cur_y + r->e->active_buf->offset_y;
+        int  col_idx  = r->e->active_buf->cur_x + r->e->active_buf->offset_x;
+
         if (isprint(c)) {
-            int line_idx = r->e->active_buf->cur_y + r->e->active_buf->offset_y;
-            int col_idx  = r->e->active_buf->cur_x + r->e->active_buf->offset_x;
             arr_insert(r->e->active_buf->rows[line_idx].chars, col_idx, c);
             ++r->e->active_buf->cur_x;
+        } else {
+            // Handle non-ascii keys
+            int o = GetKeyPressed();
+            if (o == KEY_ENTER) {
+                cmd_line_break(r->e, 1);
+            }
         }
     }
 
